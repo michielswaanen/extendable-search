@@ -2,3 +2,6 @@
 # Except for the .keep file, so that git will keep the empty directory
 uploads/**
 !uploads/.keep
+
+# Cache
+__pycache__/

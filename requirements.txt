@@ -1,1 +1,10 @@
 Flask==2.3.3
+scenedetect[opencv-headless]==0.6.2
+opencv-python-headless==4.8.0.76
+# numpy==1.26.0
+# click==8.1.7
+# tqdm==4.66.1
+# appdirs==1.4.4
+# av==9.0.2
+# ffmpeg-python==0.2.0
+# pymkv==1.0.8
