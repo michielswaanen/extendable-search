@@ -5,3 +5,6 @@ uploads/**
 
 # Cache
 __pycache__/
+
+# Environment variables
+.env

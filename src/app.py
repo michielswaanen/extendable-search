@@ -1,6 +1,7 @@
 from flask import Flask, request, Response
 from core.upload import handle_upload
 from core.detect import handle_detect
+import os
 
 app = Flask(__name__)
 
