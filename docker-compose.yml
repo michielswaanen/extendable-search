@@ -7,4 +7,4 @@ services:
       - 4040:4040
     volumes:
       - .:/app
-    command: python app.py
+    command: python src/app.py

@@ -1,4 +1,5 @@
 from flask import Flask, request
+import os
 
 app = Flask(__name__)
 
@@ -12,7 +13,6 @@ def upload():
 
     # Save the file to the uploads folder on the os
     video.save('uploads/{}'.format(video.filename))
-
 
     return 'File uploaded successfully'
 
