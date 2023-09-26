@@ -6,13 +6,5 @@ services:
     ports:
       - 4040:4040
     volumes:
-      - .:/app
-    command: python src/app.py
-  db:
-    image: postgres:latest
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-    ports:
-      - 5432:5432
+      - .:/app/code
+    command: python code/src/app.py

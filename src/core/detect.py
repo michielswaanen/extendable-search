@@ -3,30 +3,8 @@ import scenedetect as sd
 import cv2
 from PIL import Image
 from transformers import CLIPProcessor
-import torch
-import uuid
 from core.database import Database
-from dotenv import load_dotenv
-
-clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-load_dotenv()
-
-def clip_embeddings(image):
-    inputs = clip_processor(images=image, return_tensors="pt", padding=True)
-    input_tokens = {
-        k: v for k, v in inputs.items()
-    }
-
-    return input_tokens['pixel_values']
-
-def save_tensor(t):
-    path = f'/tmp/{uuid.uuid4()}'
-    torch.save(t, path)
-
-    return path
-
-def load_tensor(path):
-    return torch.load(path)
+from core.embed import embed_image, average_embedding, save_tensor, load_tensor
 
 def handle_detect(video_path):
 
@@ -75,6 +53,7 @@ def handle_detect(video_path):
         scene_samples = scenes_frame_samples[scene_idx]
 
         pixel_tensors = [] # holds all of the clip embeddings for each of the samples
+
         for frame_sample in scene_samples:
             cap.set(1, frame_sample)
             ret, frame = cap.read()
@@ -86,11 +65,11 @@ def handle_detect(video_path):
 
             print('Calculating embedding #', frame_sample, flush=True)
 
-            clip_pixel_values = clip_embeddings(pil_image)
+            clip_pixel_values = embed_image(pil_image)
 
             pixel_tensors.append(clip_pixel_values)
 
-        avg_tensor = torch.mean(torch.stack(pixel_tensors), dim=0)
+        avg_tensor = average_embedding(pixel_tensors)
         scene_clip_embeddings.append(save_tensor(avg_tensor))
 
     ##############################
