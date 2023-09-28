@@ -1,7 +1,7 @@
 from flask import Flask, request
 from core.upload import handle_upload
-from core.detect import handle_detect
-from core.search import handle_search
+from core.detect_v2 import handle_detect
+from core.search_v2 import handle_search
 from dotenv import load_dotenv
 
 app = Flask(__name__)
@@ -12,7 +12,7 @@ load_dotenv()
 def detect():
     # Get name from body
     name = request.json['name']
-    return handle_detect('code/uploads/{}'.format(name))
+    return handle_detect(name)
 
 
 @app.route('/upload', methods=['POST'])

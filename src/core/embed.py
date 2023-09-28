@@ -3,20 +3,21 @@ from sentence_transformers import SentenceTransformer
 import torch
 import uuid
 import numpy as np
-import subprocess
 
 model = SentenceTransformer('model/clip-ViT-B-32')
 
-def embed_image(image: Image):
+def embed_normalize(image: Image):
     embedding = model.encode(image)
-    return embedding
+    return normalize_embedding(embedding).tolist()
 
-def embed_text(text: str):
-    embedding = model.encode(text)
+def embed(src):
+    embedding = model.encode(src)
     return embedding
 
 def normalize_embedding(embedding):
-    return embedding / np.linalg.norm(embedding)
+    # return embedding
+    return embedding
+    # return embedding / np.linalg.norm(embedding)
 
 def average_embedding(embed: list):
     return np.mean(embed, axis=0)

@@ -4,9 +4,10 @@ import cv2
 from PIL import Image
 from transformers import CLIPProcessor
 from core.database import Database
-from core.embed import embed_image, average_embedding, save_tensor, load_tensor
+from core.embed import embed, average_embedding, save_tensor, load_tensor, normalize_embedding
 
-def handle_detect(video_path):
+
+def handle_detect_v1(video_path):
 
     ##############################
     #        Detect scenes       #
@@ -30,14 +31,14 @@ def handle_detect(video_path):
     cap = cv2.VideoCapture(video_path)
 
     every_n = 2 # number of samples per scene
-    no_of_samples = 5 # number of samples per scene
+    no_of_samples = 10 # number of samples per scene
 
     scenes_frame_samples = []
 
     for scene_idx in range(len(scenes)):
         scene_length = abs(scenes[scene_idx][0].frame_num - scenes[scene_idx][1].frame_num)
         every_n = round(scene_length/no_of_samples)
-        local_samples = [(every_n * n) + scenes[scene_idx][0].frame_num for n in range(3)]
+        local_samples = [(every_n * n) + scenes[scene_idx][0].frame_num for n in range(no_of_samples)]
 
         scenes_frame_samples.append(local_samples)
 
@@ -48,6 +49,9 @@ def handle_detect(video_path):
     ##############################
 
     scene_clip_embeddings = [] # to hold the scene embeddings in the next step
+
+    # Get frames in video
+    frames = sd.get_video_frames(video_path, scenes)
 
     for scene_idx in range(len(scenes_frame_samples)):
         scene_samples = scenes_frame_samples[scene_idx]
@@ -65,12 +69,12 @@ def handle_detect(video_path):
 
             print('Calculating embedding #', frame_sample, flush=True)
 
-            clip_pixel_values = embed_image(pil_image)
+            clip_pixel_values = embed(pil_image)
 
             pixel_tensors.append(clip_pixel_values)
 
         avg_tensor = average_embedding(pixel_tensors)
-        scene_clip_embeddings.append(save_tensor(avg_tensor))
+        scene_clip_embeddings.append(save_tensor(normalize_embedding(avg_tensor)))
 
     ##############################
     #          Database          #
@@ -95,8 +99,11 @@ def handle_detect(video_path):
     database.commit()
 
     # Insert video
-    database.query("INSERT INTO videos (path, name) VALUES (%s, %s)", (video_path, os.path.basename(video_path)))
+    database.query("INSERT INTO videos (path, name) VALUES (%s, %s) RETURNING id", (video_path, os.path.basename(video_path)))
+    video_id = database.fetch_one()[0]
     database.commit()
+
+    # Get video id
 
     # Insert scenes
     for scene_idx in range(len(scenes)):
@@ -104,7 +111,7 @@ def handle_detect(video_path):
         print(scene, flush=True)
         file_name = scene_clip_embeddings[scene_idx]
         vector = load_tensor(file_name).tolist()
-        database.query("INSERT INTO scenes (video_id, start_frame, end_frame, embedding) VALUES (%s, %s, %s, %s)", (1, scene[0].frame_num, scene[1].frame_num, vector))
+        database.query("INSERT INTO scenes (video_id, start_frame, end_frame, embedding) VALUES (%s, %s, %s, %s)", (video_id, scene[0].frame_num, scene[1].frame_num, vector))
 
     database.commit()
     return 'OK'
