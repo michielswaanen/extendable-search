@@ -5,6 +5,8 @@ from transformers import AutoProcessor, AutoModel, AutoTokenizer
 from huggingface_hub import hf_hub_download
 from core.database import Database
 import os
+import scenedetect as sd
+import cv2
 
 # np.random.seed(0)
 
@@ -67,19 +69,62 @@ def sample_frame_indices(clip_len, frame_sample_rate, seg_len):
 
     return indices
 
-def handle_detect(video_path):
-    container = av.open('code/uploads/{filename}'.format(filename=video_path))
+def detect_scenes(video_path):
+    video = sd.open_video(video_path)
+
+    sm = sd.SceneManager()
+
+    sm.add_detector(sd.ContentDetector(threshold=27.0))
+    sm.detect_scenes(video)
+
+    scenes = sm.get_scene_list()
+
+    every_n = 2 # number of samples per scene
+    no_of_samples = 8 # number of samples per scene
+
+    scenes_frame_samples = []
+
+    for scene_idx in range(len(scenes)):
+        scene_length = abs(scenes[scene_idx][0].frame_num - scenes[scene_idx][1].frame_num)
+        print("scene_length", scene_length, flush=True)
+        every_n = round(scene_length/no_of_samples)
+        local_samples = [(every_n * n) + scenes[scene_idx][0].frame_num for n in range(no_of_samples)]
+
+        scenes_frame_samples.append(local_samples)
+
+    print(scenes_frame_samples, flush=True)
+    return scenes_frame_samples
+
+def get_fps(video_path):
+    cap = cv2.VideoCapture(video_path)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    return fps
+
+# This should lower the dimensions of the video and save it to a new file
+def lower_dimensions(video_path):
+
+
+
+def handle_detect(video_name):
+    video_path = 'code/uploads/{filename}'.format(filename=video_name)
+    container = av.open(video_path)
 
     # sample 8 frames
-    print("container", container, flush=True)
-    indices = sample_frame_indices(clip_len=8, frame_sample_rate=10, seg_len=container.streams.video[0].frames)
-    print("indices", indices, flush=True)
-    video = read_video_pyav(container, indices)
+    scenes = detect_scenes(video_path)
 
-    print("Processing video a total of {indices} frames...".format(indices=len(indices)), flush=True)
-    inputs = processor(videos=list(video), return_tensors="pt")
-    print("Calculating features...", flush=True)
-    video_features = model.get_video_features(**inputs)
+    # Round up to nearest 3
+    fps = round(get_fps(video_path), 3)
+
+    video_features = []
+
+    for scene in scenes:
+        # indices = sample_frame_indices(clip_len=8, frame_sample_rate=10, seg_len=container.streams.video[0].frames)
+    # print("indices", indices, flush=True)
+        video = read_video_pyav(container, scene)
+        print("Processing video a total of {indices} frames...".format(indices=len(scene)), flush=True)
+        inputs = processor(videos=list(video), return_tensors="pt")
+        print("Calculating features...", flush=True)
+        video_features.append(model.get_video_features(**inputs))
 
     ##############################
     #          Database          #
@@ -97,21 +142,28 @@ def handle_detect(video_path):
     # Connect to database
     database.connect()
 
+    print('Connected to database', flush=True)
+
     # Create vector extension
-    database.query("CREATE EXTENSION IF NOT EXISTS embedding")
-    database.query("CREATE TABLE IF NOT EXISTS videos (id SERIAL PRIMARY KEY, path VARCHAR(255) NOT NULL, name VARCHAR(255) NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
-    database.query("CREATE TABLE IF NOT EXISTS scenes (id SERIAL PRIMARY KEY, video_id INTEGER NOT NULL, start_frame INTEGER NOT NULL, end_frame INTEGER NOT NULL, embedding real[] NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+    database.query("CREATE TABLE IF NOT EXISTS videos (id SERIAL PRIMARY KEY, path VARCHAR(255) NOT NULL, name VARCHAR(255) NOT NULL, fps NUMERIC(3) NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+    database.query("CREATE TABLE IF NOT EXISTS scenes (id SERIAL PRIMARY KEY, video_id INTEGER NOT NULL, start_frame INTEGER NOT NULL, end_frame INTEGER NOT NULL, embedding VECTOR(512) NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+    database.query("CREATE EXTENSION IF NOT EXISTS vector SCHEMA scenes")
+    database.query("CREATE INDEX ON scenes USING hnsw (embedding vector_cosine_ops)")
     database.commit()
 
     # Insert video
-    database.query("INSERT INTO videos (path, name) VALUES (%s, %s) RETURNING id", (video_path, os.path.basename(video_path)))
-    video_id = database.fetch_one()[0]
+    database.query("INSERT INTO videos (path, name, fps) VALUES (%s, %s, %s) RETURNING id", (video_path, video_path, fps))
+    video_id = database.fetch_one()
+    print ("video_id", video_id, flush=True)
     database.commit()
 
-    # Get embedding from tensor
-    embedding = video_features[0].tolist()
 
-    database.query("INSERT INTO scenes (video_id, start_frame, end_frame, embedding) VALUES (%s, %s, %s, %s)", (video_id, 0, 1, embedding))
+    # Get embedding from tensor
+
+    for scene in scenes:
+        embedding = video_features[scenes.index(scene)][0].tolist()
+        database.query("INSERT INTO scenes (video_id, start_frame, end_frame, embedding) VALUES (%s, %s, %s, %s)", (video_id, scene[0], scene[-1], embedding))
+
     database.commit()
 
     return 'OK'

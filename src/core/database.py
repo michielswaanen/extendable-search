@@ -38,7 +38,7 @@ class Database:
 
     def fetch_one(self):
         try:
-            return self.cursor.fetchone()
+            return self.cursor.fetchone()[0]
         except Exception as e:
             print(e)
             return False
