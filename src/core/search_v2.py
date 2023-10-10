@@ -19,8 +19,15 @@ def handle_output(result: list):
     for scene in result:
         output.append({
             'name': scene[0],
-            'start_time': scene[1] / float(scene[3]),
-            'end_time': scene[2] / float(scene[3])
+            'similarity': scene[4],
+            'start_time': {
+                'minutes': int(scene[1] / (scene[3] * 60)),
+                'seconds': int(scene[1] / scene[3]) % 60,
+            },
+            'end_time': {
+                'minutes': int(scene[2] / (scene[3] * 60)),
+                'seconds': int(scene[2] / scene[3]) % 60,
+            }
         })
 
     return output
@@ -38,10 +45,11 @@ def handle_search(request):
     print('Connecting to database', flush=True)
     database.connect()
 
-    database.query("SELECT videos.name,  scenes.start_frame, scenes.end_frame, videos.fps FROM scenes INNER JOIN videos ON scenes.video_id = videos.id ORDER BY embedding <-> %s LIMIT 5", (str(embedding),))
+    database.query("SELECT videos.name, scenes.start_frame, scenes.end_frame, videos.fps, 1 - (scenes.embedding <=> %s) as similarity FROM scenes INNER JOIN videos ON scenes.video_id = videos.id WHERE 1 - (embedding <=> %s) > %s ORDER BY similarity DESC LIMIT 5", (str(embedding), str(embedding), 0.1))
+
     print("Fetching results...", flush=True)
     results = database.fetch_all()
-    print("Fetching results!", flush=True)
+    print("Fetching results!", len(results), flush=True)
     database.commit()
 
     return handle_output(results)

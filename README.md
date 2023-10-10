@@ -12,3 +12,14 @@
 
 ### Alternatives
 - Look at TimeSformer from facebook
+
+
+### Learnings
+- X-CLIP-BASE:
+    - Works great with short videos
+    - Works great if you want to find video
+    - Doesn't work great for long videos
+    - Doesn't work great to find a specific moment in a video
+    - Bottleneck: how to process long videos?
+        - Maybe use parallel processing
+        - Maybe use a different model

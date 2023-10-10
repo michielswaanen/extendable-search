@@ -36,8 +36,6 @@ def read_video_pyav(container, indices):
         if i >= start_index and i in indices:
             frames.append(frame)
 
-    print ("frames", frames, flush=True)
-
     return np.stack([x.to_ndarray(format="rgb24") for x in frames], axis=0)
 
 
@@ -101,12 +99,31 @@ def get_fps(video_path):
     return fps
 
 # This should lower the dimensions of the video and save it to a new file
-def lower_dimensions(video_path):
+# def lower_dimensions(video_path):
+#     input_video = av.open(video_path)
 
+#     # Convert input video to 480p
+#     output_video = av.open('code/uploads/224p.mp4', 'w')
 
+#     stream = output_video.add_stream('mpeg4', rate=24)
+#     stream.width = 224
+#     stream.height = 224
+
+#     for frame in input_video.decode(video=0):
+#         frame = frame.reformat(width=224, height=224)
+#         for packet in stream.encode(frame):
+#             output_video.mux(packet)
+
+#     for packet in stream.encode():
+#         output_video.mux(packet)
+
+#     output_video.close()
 
 def handle_detect(video_name):
     video_path = 'code/uploads/{filename}'.format(filename=video_name)
+
+    # lower_dimensions(video_path)
+
     container = av.open(video_path)
 
     # sample 8 frames
@@ -115,16 +132,22 @@ def handle_detect(video_name):
     # Round up to nearest 3
     fps = round(get_fps(video_path), 3)
 
-    video_features = []
+    video_feature_files = []
 
     for scene in scenes:
-        # indices = sample_frame_indices(clip_len=8, frame_sample_rate=10, seg_len=container.streams.video[0].frames)
-    # print("indices", indices, flush=True)
+        print("Processing {num_scene} of {total_scene}...".format(num_scene=scenes.index(scene), total_scene=len(scenes)), flush=True)
         video = read_video_pyav(container, scene)
-        print("Processing video a total of {indices} frames...".format(indices=len(scene)), flush=True)
         inputs = processor(videos=list(video), return_tensors="pt")
-        print("Calculating features...", flush=True)
-        video_features.append(model.get_video_features(**inputs))
+        random_id = np.random.randint(0, 1000000000)
+        video_feature_files.append(f'code/tensors/{random_id}.pt')
+        print("Saving tensor to {filename}".format(filename=video_feature_files[-1]), flush=True)
+        embedding = model.get_video_features(**inputs)
+
+        # Save embedding to text file
+        torch.save(embedding, video_feature_files[-1])
+
+
+
 
     ##############################
     #          Database          #
@@ -148,7 +171,7 @@ def handle_detect(video_name):
     database.query("CREATE TABLE IF NOT EXISTS videos (id SERIAL PRIMARY KEY, path VARCHAR(255) NOT NULL, name VARCHAR(255) NOT NULL, fps NUMERIC(3) NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
     database.query("CREATE TABLE IF NOT EXISTS scenes (id SERIAL PRIMARY KEY, video_id INTEGER NOT NULL, start_frame INTEGER NOT NULL, end_frame INTEGER NOT NULL, embedding VECTOR(512) NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
     database.query("CREATE EXTENSION IF NOT EXISTS vector SCHEMA scenes")
-    database.query("CREATE INDEX ON scenes USING hnsw (embedding vector_cosine_ops)")
+    # database.query("CREATE INDEX ON scenes USING hnsw (embedding vector_cosine_ops)")
     database.commit()
 
     # Insert video
@@ -157,12 +180,18 @@ def handle_detect(video_name):
     print ("video_id", video_id, flush=True)
     database.commit()
 
+    for index in range(len(scenes)):
+        file_name = video_feature_files[index]
+        print("Saving {filename} to database".format(filename=file_name), flush=True)
 
-    # Get embedding from tensor
+        tensor = torch.load(file_name)
+        embedding = tensor.detach().numpy().tolist()[0]
+        start_frame = scenes[index][0]
+        end_frame = scenes[index][-1]
 
-    for scene in scenes:
-        embedding = video_features[scenes.index(scene)][0].tolist()
-        database.query("INSERT INTO scenes (video_id, start_frame, end_frame, embedding) VALUES (%s, %s, %s, %s)", (video_id, scene[0], scene[-1], embedding))
+        database.query("INSERT INTO scenes (video_id, start_frame, end_frame, embedding) VALUES (%s, %s, %s, %s)", (video_id, start_frame, end_frame, embedding))
+
+        os.remove(file_name)
 
     database.commit()
 

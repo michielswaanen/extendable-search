@@ -3,6 +3,9 @@
 uploads/**
 !uploads/.keep
 
+tensors/**
+!tensors/.keep
+
 # Cache
 __pycache__/
 
