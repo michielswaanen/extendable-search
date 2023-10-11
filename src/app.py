@@ -2,6 +2,7 @@ from flask import Flask, request
 from core.upload import handle_upload
 from core.detect_v2 import handle_detect
 from core.search_v2 import handle_search
+from core.face import handle_face
 from dotenv import load_dotenv
 
 app = Flask(__name__)
@@ -23,6 +24,10 @@ def upload():
 @app.route('/search', methods=['POST'])
 def search():
     return handle_search(request)
+
+@app.route('/face', methods=['GET'])
+def face():
+    return handle_face(request)
 
 
 if __name__ == '__main__':

@@ -53,3 +53,5 @@ def handle_search(request):
     database.commit()
 
     return handle_output(results)
+
+# ffmpeg -i one-minute.mp4 -vf scale=480:-1 -r 10 one-minute-480-3.mp4

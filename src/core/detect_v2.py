@@ -11,8 +11,8 @@ import cv2
 # np.random.seed(0)
 
 print("Initializing model...", flush=True)
-processor = AutoProcessor.from_pretrained("microsoft/xclip-base-patch32")
-model = AutoModel.from_pretrained("microsoft/xclip-base-patch32")
+# processor = AutoProcessor.from_pretrained("microsoft/xclip-base-patch32")
+# model = AutoModel.from_pretrained("microsoft/xclip-base-patch32")
 print("Model initialized", flush=True)
 
 def read_video_pyav(container, indices):
@@ -98,31 +98,11 @@ def get_fps(video_path):
     fps = cap.get(cv2.CAP_PROP_FPS)
     return fps
 
-# This should lower the dimensions of the video and save it to a new file
-# def lower_dimensions(video_path):
-#     input_video = av.open(video_path)
-
-#     # Convert input video to 480p
-#     output_video = av.open('code/uploads/224p.mp4', 'w')
-
-#     stream = output_video.add_stream('mpeg4', rate=24)
-#     stream.width = 224
-#     stream.height = 224
-
-#     for frame in input_video.decode(video=0):
-#         frame = frame.reformat(width=224, height=224)
-#         for packet in stream.encode(frame):
-#             output_video.mux(packet)
-
-#     for packet in stream.encode():
-#         output_video.mux(packet)
-
-#     output_video.close()
 
 def handle_detect(video_name):
     video_path = 'code/uploads/{filename}'.format(filename=video_name)
 
-    # lower_dimensions(video_path)
+    # TODO: ffmpeg -i one-minute.mp4 -vf scale=480:-1 -r 10 one-minute-480-3.mp4
 
     container = av.open(video_path)
 
