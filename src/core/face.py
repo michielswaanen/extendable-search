@@ -1,27 +1,38 @@
 from deepface import DeepFace
 import cv2
 import numpy as np
+import tempfile
+import os
 
 def handle_face(request):
 
-    # Detect face
-    # https://pypi.org/project/deepface/
+    def detect_faces(img):
+        temp_dir = tempfile.TemporaryDirectory()
+        path = f'code/uploads/faces{temp_dir.name}/'
+        os.makedirs(path)
 
-    def detect_face(img):
-        detector = cv2.dnn.readNetFromCaffe(
-            'code/src/models/deploy.prototxt.txt', 'code/src/models/res10_300x300_ssd_iter_140000.caffemodel')
-
-        face_cascade = cv2.CascadeClassifier('code/src/models/haarcascade_frontalface_default.xml')
-
+        faces = DeepFace.extract_faces(img_path=img, detector_backend='retinaface', target_size = (224, 224), align = True)
         image = cv2.imread(img)
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, 1.1, 4)
 
-        for (x, y, w, h) in faces:
-            # cv2.rectangle(image, (x, y), (x+w, y+h), (0, 0, 255), 2)
-            faces = image[y:y + h, x:x + w]
-            cv2.imwrite(f'code/uploads/faces/extracted/face{x}_{y}_{w}_{h}.jpg', faces)
+        index = 0
+        for face in faces:
+            area = face['facial_area']
+            x = area['x']
+            y = area['y']
+            w = area['w']
+            h = area['h']
+            cropped = image[y:y + h, x:x + w]
+            face_path = f'{path}/face_{index}.jpg';
+            cv2.imwrite(face_path, cropped)
+            embed_face(face_path)
+            index += 1
 
         return "OK"
 
-    return detect_face('code/uploads/faces/IMG-20190420-WA0005.jpg')
+    def embed_face(img):
+        faces = DeepFace.represent(img_path=img, model_name ='Facenet512', enforce_detection=False)
+        print(faces, flush=True)
+        return "OK"
+
+
+    return detect_faces('code/uploads/faces/IMG-20220716-WA0003.jpg')
