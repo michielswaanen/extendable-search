@@ -1,5 +1,5 @@
 from transformers import AutoModel, AutoTokenizer
-from core.database import Database
+from core.database.database import Database
 import os
 
 def generate_embedding(request):

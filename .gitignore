@@ -1,6 +1,7 @@
 # Ignore everything inside the uploads directory
 # Except for the .keep file, so that git will keep the empty directory
 uploads/**
+jobs/tmp/**
 !uploads/.keep
 
 tensors/**

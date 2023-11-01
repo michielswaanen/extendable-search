@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from transformers import AutoProcessor, AutoModel, AutoTokenizer
 from huggingface_hub import hf_hub_download
-from core.database import Database
+from core.database.database import Database
 import os
 import scenedetect as sd
 import cv2
@@ -11,8 +11,8 @@ import cv2
 # np.random.seed(0)
 
 print("Initializing model...", flush=True)
-# processor = AutoProcessor.from_pretrained("microsoft/xclip-base-patch32")
-# model = AutoModel.from_pretrained("microsoft/xclip-base-patch32")
+processor = AutoProcessor.from_pretrained("microsoft/xclip-base-patch32")
+model = AutoModel.from_pretrained("microsoft/xclip-base-patch32")
 print("Model initialized", flush=True)
 
 def read_video_pyav(container, indices):
@@ -115,6 +115,7 @@ def handle_detect(video_name):
     video_feature_files = []
 
     for scene in scenes:
+        print("scene", scene, flush=True)
         print("Processing {num_scene} of {total_scene}...".format(num_scene=scenes.index(scene), total_scene=len(scenes)), flush=True)
         video = read_video_pyav(container, scene)
         inputs = processor(videos=list(video), return_tensors="pt")
@@ -150,6 +151,8 @@ def handle_detect(video_name):
     # Create vector extension
     database.query("CREATE TABLE IF NOT EXISTS videos (id SERIAL PRIMARY KEY, path VARCHAR(255) NOT NULL, name VARCHAR(255) NOT NULL, fps NUMERIC(3) NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
     database.query("CREATE TABLE IF NOT EXISTS scenes (id SERIAL PRIMARY KEY, video_id INTEGER NOT NULL, start_frame INTEGER NOT NULL, end_frame INTEGER NOT NULL, embedding VECTOR(512) NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+    database.query("CREATE TABLE IF NOT EXISTS faces (id SERIAL PRIMARY KEY, file_name VARCHAR(255) NOT NULL, embedding VECTOR(512) NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+    # database.query("CREATE TABLE IF NOT EXISTS people (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
     database.query("CREATE EXTENSION IF NOT EXISTS vector SCHEMA scenes")
     # database.query("CREATE INDEX ON scenes USING hnsw (embedding vector_cosine_ops)")
     database.commit()
