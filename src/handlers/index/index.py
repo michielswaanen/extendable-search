@@ -2,7 +2,12 @@ from core.ffmpeg.create import create_downscaled_video_copy, create_audio_copy
 from core.scenes.manager import get_scene_timestamps
 from core.opencv.fps import get_fps
 from modalities.visual.handler import analyze as analyze_visual
+from core.ffmpeg.extract import extract_screenshot
 import time
+import av
+import os
+from PIL import Image
+
 # scenes: [(0, 0, 110), (1, 110, 299), (1, 299, 488), (1, 488, 678), (1, 678, 867), (1, 867, 1056), (1, 1056, 1245), (1, 1245, 1434), (1, 1434, 1623), (1, 1623, 1812), (1, 1812, 2002), (1, 2002, 2191), (1, 2191, 2380), (1, 2380, 2569), (1, 2569, 2758), (1, 2758, 2948), (1, 2948, 3137), (1, 3137, 3326), (1, 3326, 3515), (1, 3515, 3704), (1, 3704, 3893), (1, 3893, 4082), (1, 4082, 4272), (1, 4272, 4461), (1, 4461, 4650), (1, 4650, 4839), (1, 4839, 5028), (1, 5028, 5218), (1, 5218, 5407), (1, 5407, 5596), (1, 5596, 5785), (2, 5785, 5876)]
 # Where the first number is the scene index, the second number is the start frame and the third number is the end frame
 def print_scenes(scenes, fps):
@@ -45,6 +50,29 @@ def get_timestamps_per_scene(scenes, per_scene=8):
 
     return timestamps_per_scene
 
+
+def create_screenshot_copies(video, timestamps_per_scene, job_path):
+    container = av.open(video)
+
+    for scene in timestamps_per_scene:
+        shots_path = f'{job_path}/scenes/{scene[0]}_{scene[-1]}/shots/'
+
+        if not os.path.exists(shots_path):
+            os.makedirs(shots_path)
+
+        for timestamp in scene:
+            print("Save shot", timestamp, flush=True)
+            screenshot = extract_screenshot(container, timestamp)
+
+            if screenshot is not None:
+                screenshot_path = f'{shots_path}{timestamp}.jpg'
+
+                # Save nd_array to image
+                image = Image.fromarray(screenshot)
+                image.save(screenshot_path)
+
+
+
 def index_handler(request):
 
     start_time = time.time()
@@ -57,14 +85,17 @@ def index_handler(request):
     audio = f'{job_path}/audio.mp3'
 
     # 1. Create workable copies of the video
-    create_downscaled_video_copy(og_video, ds_video, '480')
+    # create_downscaled_video_copy(og_video, ds_video, '480')
     create_audio_copy(og_video, audio)
 
     # 2. Split video into scenes
-    scenes = get_scene_timestamps(ds_video)
+    scenes = get_scene_timestamps(og_video)
 
-    # Get timestamps of each scene, we want 8 frames per scene, evenly spaced out
+    # 3. Get timestamps of each scene, we want 8 frames per scene, evenly spaced out
     timestamps_per_scene = get_timestamps_per_scene(scenes, 8)
+
+    # 4. Save shots to disk
+    create_screenshot_copies(og_video, timestamps_per_scene, job_path)
 
     # fps = get_fps(ds_video)
 
