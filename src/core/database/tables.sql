@@ -1,0 +1,59 @@
+-- General tables
+
+CREATE TABLE IF NOT EXISTS videos
+(
+    id SERIAL PRIMARY KEY,
+    job_id VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    fps NUMERIC(3) NOT NULL,
+    duration NUMERIC(10, 3) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS scenes
+(
+    id SERIAL PRIMARY KEY,
+    video_id INTEGER NOT NULL REFERENCES videos(id),
+    start_frame INTEGER NOT NULL,
+    end_frame INTEGER NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Helper tables
+
+CREATE TABLE IF NOT EXISTS persons
+(
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    average_face_vector VECTOR(512),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Modality tables
+
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE IF NOT EXISTS modality_visual
+(
+    id SERIAL PRIMARY KEY,
+    scene_id INTEGER NOT NULL REFERENCES scenes(id),
+    vector VECTOR(512) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS modality_audio
+(
+    id SERIAL PRIMARY KEY,
+    scene_id INTEGER NOT NULL REFERENCES scenes(id),
+    vector VECTOR(512) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS modality_faces
+(
+    id SERIAL PRIMARY KEY,
+    scene_id INTEGER NOT NULL REFERENCES scenes(id),
+    person_id INTEGER NOT NULL REFERENCES persons(id),
+    vector VECTOR(512) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
