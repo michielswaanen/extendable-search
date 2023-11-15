@@ -130,3 +130,11 @@ def save_audio_modality_to_db(scene_id, vector):
         (scene_id, vector)
     )
     database.commit()
+
+def save_face_modality_to_db(scene_id, vector):
+    database = init_connection()
+    database.query(
+        "INSERT INTO modality_faces (scene_id, vector) VALUES (%s, %s)",
+        (scene_id, vector)
+    )
+    database.commit()

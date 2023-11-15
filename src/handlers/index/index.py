@@ -2,9 +2,10 @@ from core.ffmpeg.create import create_downscaled_video_copy, create_audio_copy
 from core.scenes.manager import get_scene_timestamps
 from modalities.visual.handler import analyze as analyze_visual
 from modalities.audio.handler import analyze as analyze_audio
+from modalities.faces.handler import analyze as analyze_faces
 from core.ffmpeg.extract import extract_screenshot
 from core.audio.audio_segment import segment_audio
-from core.database.connection import save_scene_to_db, save_visual_modality_to_db, save_audio_modality_to_db, get_video
+from core.database.connection import save_scene_to_db, save_visual_modality_to_db, save_audio_modality_to_db, get_video, save_face_modality_to_db
 import time
 import av
 import os
@@ -128,16 +129,37 @@ def save_features_to_db(video_id, job_path, timestamps_per_scene):
 
         embedding_path = f'{scenes_path}/{scene_timestamps[0]}_{scene_timestamps[-1]}/embeddings/'
 
-        visual_embedding_path = f'{embedding_path}/visual.pt'
-        audio_embedding_path = f'{embedding_path}/audio.pt'
+        visual_embedding_path = f'{embedding_path}visual.pt'
+        audio_embedding_path = f'{embedding_path}audio.pt'
+
+        # Get all file paths that start with face_
+        face_embedding_files = []
+
+        for file in os.listdir(embedding_path):
+            if file.startswith('face_'):
+                face_embedding_files.append(file)
 
         # Load the embedding
-        visual_embedding = torch.load(visual_embedding_path).detach().numpy().tolist()[0]
-        audio_embedding = torch.load(audio_embedding_path).detach().numpy().tolist()[0]
+        try:
+            visual_embedding = torch.load(visual_embedding_path).detach().numpy().tolist()[0]
+            save_visual_modality_to_db(scene_id, visual_embedding)
+            print(f"> Saved visual embedding for scene {scene_id}", flush=True)
+        except Exception as e:
+            print(f"> Error loading visual embedding for scene {scene_id}", flush=True)
 
         # Save embeddings to db
-        save_visual_modality_to_db(scene_id, visual_embedding)
-        save_audio_modality_to_db(scene_id, audio_embedding)
+        try:
+            audio_embedding = torch.load(audio_embedding_path).detach().numpy().tolist()[0]
+            save_audio_modality_to_db(scene_id, audio_embedding)
+            print(f"> Saved audio embedding for scene {scene_id}", flush=True)
+        except Exception as e:
+            print(f"> Error loading audio embedding for scene {scene_id}", flush=True)
+
+        for face_embedding_file in face_embedding_files:
+            face_embedding_path = f'{embedding_path}{face_embedding_file}'
+            face_embedding = torch.load(face_embedding_path)
+            save_face_modality_to_db(scene_id, face_embedding)
+            print(f"> Saved face embedding for scene {scene_id}", flush=True)
 
     pass
 
@@ -176,6 +198,7 @@ def index_handler(request):
 
     analyze_visual(job_path, timestamps_per_scene)
     analyze_audio(job_path, timestamps_per_scene)
+    analyze_faces(job_path, timestamps_per_scene)
 
     # 5. Save features to database
     save_features_to_db(video_id, job_path, timestamps_per_scene)

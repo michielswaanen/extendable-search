@@ -20,6 +20,9 @@ def analyze(job_path, frame_scenes):
 
         audios = get_audio_as_array(audio_path)
 
+        if len(audios) == 0:
+            continue
+
         inputs = processor(audios=audios, return_tensors="pt", sampling_rate=48000)
         embedding = model.get_audio_features(**inputs)
 

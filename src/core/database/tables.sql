@@ -21,13 +21,13 @@ CREATE TABLE IF NOT EXISTS scenes
 
 -- Helper tables
 
-CREATE TABLE IF NOT EXISTS persons
-(
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    average_face_vector VECTOR(512),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+-- CREATE TABLE IF NOT EXISTS persons
+-- (
+--     id SERIAL PRIMARY KEY,
+--     name VARCHAR(255) NOT NULL,
+--     average_face_vector VECTOR(512),
+--     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- );
 
 -- Modality tables
 
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS modality_faces
 (
     id SERIAL PRIMARY KEY,
     scene_id INTEGER NOT NULL REFERENCES scenes(id),
-    person_id INTEGER NOT NULL REFERENCES persons(id),
-    vector VECTOR(512) NOT NULL,
+    -- person_id INTEGER NOT NULL REFERENCES persons(id),
+    vector VECTOR(2622) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
