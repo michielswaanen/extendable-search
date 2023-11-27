@@ -94,6 +94,23 @@ def get_video(video_id):
     video = database.fetch_one()
     return video
 
+def get_videos():
+    database = init_connection()
+    database.query(
+        "SELECT * FROM videos"
+    )
+    videos = database.fetch_all()
+    return videos
+
+def get_scenes(video_id):
+    database = init_connection()
+    database.query(
+        "SELECT * FROM scenes WHERE video_id = %s",
+        (video_id,)
+    )
+    scenes = database.fetch_all()
+    return scenes
+
 def save_video_to_db(job_id, name, fps, duration):
     database = init_connection()
     database.query(

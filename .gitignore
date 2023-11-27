@@ -1,15 +1,23 @@
 # Ignore everything inside the uploads directory
 # Except for the .keep file, so that git will keep the empty directory
-uploads/**
-!uploads/.keep
-jobs/**
-!jobs/.keep
+api/uploads/**
+!api/uploads/.keep
+api/jobs/**
+!api/jobs/.keep
 
-tensors/**
-!tensors/.keep
+api/tensors/**
+!api/tensors/.keep
 
 # Cache
 __pycache__/
 
 # Environment variables
 .env
+
+# Next
+/node_modules
+/.pnp
+.pnp.js
+/.next/
+/out/
+/build

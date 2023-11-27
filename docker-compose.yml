@@ -2,9 +2,22 @@ version: '3'
 
 services:
   web:
-    build: .
+    build:
+      context: ./web
+      dockerfile: Dockerfile
     ports:
-      - 4040:4040
+      - 3000:3000
     volumes:
-      - .:/app/code
-    command: python code/src/app.py
+      - ./web:/app
+      - /app/node_modules
+      - /app/.next
+    command: pnpm run dev
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - 3001:3001
+    volumes:
+      - ./api:/app
+    command: python src/app.py
