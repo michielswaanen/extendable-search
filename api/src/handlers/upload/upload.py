@@ -6,6 +6,8 @@ def upload_handler(request):
 
     init_tables()
 
+    print(request.files, flush=True)
+
     if 'video' not in request.files:
         return 'No file uploaded', 400
 

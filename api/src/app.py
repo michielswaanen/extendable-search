@@ -26,12 +26,12 @@ def search():
 def index():
     return index_handler(request)
 
-@app.route('/list/videos', methods=['GET'])
+@app.route('/videos', methods=['GET'])
 @cross_origin()
 def get_videos():
     return list_videos_handler(request)
 
-@app.route('/list/scenes/<video_id>', methods=['GET'])
+@app.route('/videos/<video_id>/scenes', methods=['GET'])
 @cross_origin()
 def get_scenes(video_id):
     return list_scenes_handler(video_id)

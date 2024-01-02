@@ -97,7 +97,10 @@ def get_video(video_id):
 def get_videos():
     database = init_connection()
     database.query(
-        "SELECT * FROM videos"
+        "SELECT v.*, count(s) as scenes FROM videos v \
+        LEFT JOIN scenes s \
+        ON s.video_id = v.id \
+        GROUP BY v.id"
     )
     videos = database.fetch_all()
     return videos
