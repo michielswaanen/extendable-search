@@ -1,4 +1,4 @@
-import { Video } from "@/core/useVideos"
+import { Video } from "@/core/state/useVideos"
 import { Clock1Icon, Layers2Icon, Tv2Icon } from "lucide-react"
 
 type Props = {

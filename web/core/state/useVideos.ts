@@ -1,11 +1,5 @@
 import { useState } from "react"
 
-export type Scene = {
-    id: string
-    start: number
-    end: number
-}
-
 export type Video = {
     id: string
     title: string

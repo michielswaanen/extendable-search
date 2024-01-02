@@ -3,8 +3,8 @@
 import Header from "@/components/global/Header";
 import SearchBox from "@/components/search/SearchBox";
 import { SearchResults } from "@/components/search/SearchResults";
-import { useMount } from "@/core/useMount";
-import useVideos from "@/core/useVideos";
+import { useMount } from "@/core/hooks/useMount";
+import useVideos from "@/core/state/useVideos";
 import { useRouter } from 'next/navigation'
 
 export default function Feed() {

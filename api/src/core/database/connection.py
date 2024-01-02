@@ -91,7 +91,7 @@ def get_video(video_id):
         "SELECT * FROM videos WHERE id = %s",
         (video_id,)
     )
-    video = database.fetch_one()
+    video = database.fetch_all()
     return video
 
 def get_videos():

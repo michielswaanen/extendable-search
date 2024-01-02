@@ -171,7 +171,7 @@ def index_handler(request):
 
     # Retrieve video from database
     video = get_video(video_id)
-    job_id = video[1]
+    job_id = video[0][1]
 
 
     job_path = f'code/jobs/{job_id}'
